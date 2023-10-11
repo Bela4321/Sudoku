@@ -15,9 +15,9 @@ public class AlgoX {
     /**
      *
      * @param matrix matrix to solve
-     * @param parent previous iteration, used for reconstruction
+     * @param parent previous iteration AlgoX, used for reconstruction
      */
-    public AlgoX(boolean[][] matrix, AlgoX parent) {
+    private AlgoX(boolean[][] matrix, AlgoX parent) {
         this.matrix = matrix;
         this.parent = parent;
         //init choices
@@ -29,6 +29,12 @@ public class AlgoX {
         Collections.shuffle(choices);
     }
 
+    /**
+     * Creates initial AlgoX object with a given set of chosen rows
+     * @param matrix generic starting constraint matrix
+     * @param initialChosenRows list of force chosen rows
+     * @return
+     */
     public static AlgoX initialSelection(boolean[][] matrix, List<Integer> initialChosenRows) {
         //reverse sort initial chosen rows
         AlgoX algoX = new AlgoX(matrix, null);
@@ -36,6 +42,11 @@ public class AlgoX {
         return algoX;
     }
 
+    /**
+     * Selects multiple rows at once
+     * @param initialChosenRows list of chosen rows
+     * @return new AlgoX object with selected rows removed/selected
+     */
     private AlgoX multiSelectRows(List<Integer> initialChosenRows) {
         selection = initialChosenRows;
         rowDeletions = new ArrayList<>(initialChosenRows);
@@ -87,7 +98,7 @@ public class AlgoX {
      * @param row row to be selected
      * @return null, if selection leads to dead end
      */
-    public AlgoX selectRow(int row) {
+    private AlgoX selectRow(int row) {
         selection = Collections.singletonList(row);
         rowDeletions = new ArrayList<>();
         rowDeletions.add(row);
@@ -139,14 +150,14 @@ public class AlgoX {
      *
      * @return true if matrix is empty (=solution is found)
      */
-    public boolean isEmpty() {
+    private boolean isEmpty() {
         return matrix.length == 0;
     }
 
     /**
      * @return index of first trivial choice, null if no trivial choice
      */
-    public Integer findTrivialChoice() {
+    private Integer findTrivialChoice() {
         for (int col = 0; col < matrix[0].length; col++) {
             int count = 0;
             Integer lastRow = null;
@@ -156,8 +167,13 @@ public class AlgoX {
                     lastRow = row;
                 }
             }
+            //check trivial choice
             if (count == 1) {
                 return lastRow;
+            }
+            //check dead end
+            if (count == 0) {
+                return -1;
             }
         }
         return null;
@@ -167,7 +183,7 @@ public class AlgoX {
      *
      * @return index of random choice, null if all choices are exhausted
      */
-    public Integer findRandChoice() {
+    private Integer findRandChoice() {
         if (choices.isEmpty()) {
             return null;
         }
@@ -183,6 +199,10 @@ public class AlgoX {
             return this;
         }
         Integer trivialChoice = findTrivialChoice();
+        //check if dead end
+        if (trivialChoice == -1) {
+            return null;
+        }
         if (trivialChoice != null) {
             AlgoX a2 = selectRow(trivialChoice);
             if (a2 == null) {
@@ -206,17 +226,21 @@ public class AlgoX {
 
 
     /**
-     * reconstructs original chosen row indicees using parent
-     * @return
+     * recursively reconstructs original chosen rows indicees using parents
+     *
+     * @return list of chosen rows
      */
     public ReconstructionHelper reconstructChosenRows() {
+        //final solve produces no choice -> start from parent
         if (selection== null) {
             return parent.reconstructChosenRows();
         }
+        //if root, return collected rows
         if (parent == null) {
             ReconstructionHelper helper = new ReconstructionHelper(new ArrayList<>(selection),new ArrayList<>(rowDeletions));
             return helper;
         }
+        //if not root, fuse with parent
         ReconstructionHelper parentReconstruction = parent.reconstructChosenRows();
         List<Integer> truelyChosenRows = new ArrayList<>(parentReconstruction.ChosenRows);
         List<Integer> truelyDeletedRows = new ArrayList<>(parentReconstruction.DeletedRows);
@@ -232,11 +256,17 @@ public class AlgoX {
             int oldIndex = findOldIndex(deletedRow,parentReconstruction.DeletedRows);
             truelyDeletedRows.add(oldIndex);
         }
+        //return fused
         ReconstructionHelper helper = new ReconstructionHelper(truelyChosenRows,truelyDeletedRows);
         return helper;
     }
 
-
+    /**
+     * finds old index of a row in the original matrix
+     * @param newIndex index of row in the new matrix
+     * @param deletions list of deleted rows
+     * @return index of row in the original matrix
+     */
     private int findOldIndex(int newIndex, List<Integer> deletions) {
         int counter = newIndex;
         int minOriginalSize = newIndex + deletions.size()+1;
@@ -266,30 +296,5 @@ public class AlgoX {
             sb.append("\n");
         }
         return sb.toString();
-    }
-
-    public static void main(String[] args) {
-        boolean[][] matrix = new boolean[][]{
-                {true, false, false, true, false, true, true, false, false},
-                {true, false, false, true, false, false, false, true, true},
-                {false, true, false, false, true, true, false, false, true},
-                {false, false, true, false, true, false, true, true, false},
-                {false, true, true, false, false, false, true, false, false},
-                {false, false, false, true, true, false, false, true, false},
-                {true, true, false, false, false, true, false, false, false},
-                {false, false, true, false, false, false, true, true, true},
-                {false, false, false, true, true, false, false, false, false}
-        };
-        AlgoX algoX = new AlgoX(matrix, null);
-        System.out.println(algoX);
-        Integer trivialChoice = algoX.findTrivialChoice();
-        System.out.println(trivialChoice);
-        AlgoX a2 = algoX.solve();
-        System.out.println();
-        System.out.println(a2);
-        if (a2 != null){
-            System.out.println(a2.reconstructChosenRows());
-
-        }
     }
 }

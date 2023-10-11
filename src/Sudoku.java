@@ -9,8 +9,12 @@ public class Sudoku {
     int[][] finalSudoku;
     List<Integer> initialChosenRows;
 
-    public void setMatrix() {
-        //each option is 9^2*row+9*col+val (val is 0-8, todo has to be shifted for UI)
+
+    /**
+     * Sets the constraint matrix for generic sudoku
+     */
+    private void setMatrix() {
+        //each option is 9^2*row+9*col+val (val is 0-8)
         //for each cell
         boolean[][] matrix_new = new boolean[9*9*9][];
         for (int row = 0; row < 9; row++) {
@@ -32,28 +36,13 @@ public class Sudoku {
         this.matrix = matrix_new;
     }
 
-    public void inputPartialSudoku() throws IOException {
-        //allow user to input partial sudoku, dot indicates empty cell
+    /**
+     * Asks user to input partial sudoku and derives initial chosen rows in constraint matrix
+     */
+    public void inputPartialSudoku() {
+        //allow user to input partial sudoku, other symbol indicates empty cell
         int[][] sudoku = new int[9][9];
-        String[] lines = {"746195283",
-                "152368.49",
-                "389.27651",
-                "961243578",
-                "478651392",
-                "5238,9164",
-                "2.4586937",
-                "89573,416",
-                "637914825"};
-        String[] lines2 = {".461.528.",
-                "1.23..74.",
-                ".89..76..",
-                "961.4....",
-                "4.8.5..92",
-                "...87.1..",
-                "21...69.7",
-                "89..3....",
-                "....14..5"
-        };
+        System.out.println("Please enter partial sudoku, use any symbol for empty cells");
         for (int row = 0; row < 9; row++) {
             String line = new Scanner(System.in).nextLine();
             for (int col = 0; col < 9; col++) {
@@ -62,7 +51,6 @@ public class Sudoku {
                     row--;
                     break;
                 }
-                //if number
                 if (line.charAt(col) > '0' && line.charAt(col) <= '9') {
                     sudoku[row][col] = Character.getNumericValue(line.charAt(col));
                 }else {
@@ -84,16 +72,33 @@ public class Sudoku {
         }
     }
 
+    /**
+     * Calls the solve of the algorithm X and reconstructs + displays the solution
+     */
     public void findSolution() {
+        //check if input already happended
+        if (initialChosenRows.size() == 0) {
+            System.out.println("No initial chosen rows, please input partial sudoku");
+            return;
+        }
+        //construct constraint matrix
+        this.setMatrix();
+
+        //solve sudoku
         AlgoX algoX = AlgoX.initialSelection(matrix, initialChosenRows);
         algoX = algoX.solve();
+
+        //check if solution found
         if (algoX == null) {
             System.out.println("No solution found");
             return;
         }
         System.out.println("Solution found");
+
+        //reconstruct chosen sudoku numbers
         ReconstructionHelper reconstructionHelper = algoX.reconstructChosenRows();
-        //fill sudoku
+
+        //fill final sudoku
         finalSudoku = new int[9][9];
         for (Integer chosenRow : reconstructionHelper.ChosenRows) {
             int row = chosenRow / (9*9);
@@ -101,6 +106,8 @@ public class Sudoku {
             int val = chosenRow % 9;
             finalSudoku[row][col] = val+1;
         }
+
+        //display solved sudoku
         for (int row = 0; row < 9; row++) {
             System.out.println();
             for (int col = 0; col < 9; col++) {
@@ -112,7 +119,6 @@ public class Sudoku {
     public static void main(String[] args) throws IOException {
         Sudoku sudoku = new Sudoku();
         sudoku.inputPartialSudoku();
-        sudoku.setMatrix();
         sudoku.findSolution();
     }
 }

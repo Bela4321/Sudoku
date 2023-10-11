@@ -1,6 +1,9 @@
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Data class for reconstruction of sudoku from constraint matrix
+ */
 public class ReconstructionHelper {
     List<Integer> ChosenRows;
     List<Integer> DeletedRows;
